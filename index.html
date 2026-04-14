@@ -841,9 +841,20 @@ function handleRealtimeEvent({ eventType, new: newRow, old: oldRow }) {
   } else if (eventType === 'UPDATE') {
     const idx = tasks.findIndex(t => t.id === newRow.id);
     if (idx !== -1) {
+      const positionChanged = tasks[idx].position !== newRow.position;
       tasks[idx] = newRow;
-      tasks.sort((a, b) => a.position - b.position);
-      render();
+      if (positionChanged) {
+        tasks.sort((a, b) => a.position - b.position);
+        render();
+      } else {
+        // Mise à jour ciblée sans re-render complet (évite le rebond)
+        const el = list.querySelector(`[data-id="${newRow.id}"]`);
+        if (el) {
+          el.classList.toggle('done', newRow.done);
+          el.querySelector('.task-label').style.color = newRow.done ? 'var(--done-text)' : 'var(--ink)';
+        }
+        updateCounter();
+      }
     }
   } else if (eventType === 'DELETE') {
     const idx = tasks.findIndex(t => t.id === oldRow.id);
@@ -939,6 +950,7 @@ function render() {
   tasks.forEach((task, i) => {
     const el = document.createElement('div');
     el.className = 'task-item' + (task.done ? ' done' : '');
+    el.dataset.id = task.id;
     el.innerHTML = `
       <div class="checkbox">
         <div class="checkbox-inner">
