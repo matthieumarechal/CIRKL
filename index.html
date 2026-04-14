@@ -669,6 +669,20 @@
   .drag-handle:hover { color: var(--ink2); }
   .dragging-active .task-item { transition: none; }
 
+  .delete-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    color: rgba(44,42,36,0.2);
+    transition: color 0.15s;
+    cursor: pointer;
+  }
+
+  .delete-btn:hover { color: #E24B4A; }
+
   /* ── MODAL ───────────────────────────────────────────────────────────────── */
 
   #info-btn {
@@ -1355,6 +1369,13 @@ async function uncheckAll() {
   render();
 }
 
+async function deleteTask(i) {
+  const id = tasks[i].id;
+  tasks.splice(i, 1);
+  render();
+  await db.from('tasks').delete().eq('id', id);
+}
+
 async function confirmClear() {
   confirmBar.classList.remove('visible');
   await db.from('tasks').delete().eq('user_id', currentUser.id);
@@ -1383,6 +1404,11 @@ function render() {
         </div>
       </div>
       <span class="task-label">${escHtml(task.text)}</span>
+      <div class="delete-btn" data-delete>
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+          <path d="M2 2L10 10M10 2L2 10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+      </div>
       <div class="drag-handle">
         <svg width="16" height="20" viewBox="0 0 16 20" fill="none">
           <circle cx="5" cy="4" r="1.5" fill="currentColor"/>
@@ -1394,7 +1420,14 @@ function render() {
         </svg>
       </div>
     `;
-    el.addEventListener('click', () => toggleTask(i, el));
+    el.addEventListener('click', e => {
+      if (e.target.closest('[data-delete]')) return;
+      toggleTask(i, el);
+    });
+    el.querySelector('[data-delete]').addEventListener('click', e => {
+      e.stopPropagation();
+      deleteTask(i);
+    });
     initDragHandle(el.querySelector('.drag-handle'), el, i);
     list.appendChild(el);
   });
