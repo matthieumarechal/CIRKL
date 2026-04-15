@@ -1052,7 +1052,14 @@
 // ── SUPABASE SETUP ────────────────────────────────────────────────────────────
 const SUPABASE_URL  = 'https://orcfwzmejmbeluvpyspc.supabase.co';
 const SUPABASE_ANON = 'sb_publishable_Dt9kU8AybQhJNtwIbPG59g_Qd7O9LmF';
-const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    storageKey: 'cirkl-auth',
+  }
+});
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
 let tasks = [];
@@ -1250,16 +1257,33 @@ async function init() {
   }
 
   db.auth.onAuthStateChange(async (event, session) => {
-    if (event === 'SIGNED_IN') {
+    if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
+      if (!session) return;
+      const wasLoggedIn = !!currentUser;
       currentUser = session.user;
-      showApp();
-      await loadTasks();
-      render();
-      subscribeToRealtime();
+      if (!wasLoggedIn) {
+        showApp();
+        await loadTasks();
+        render();
+        subscribeToRealtime();
+      }
     } else if (event === 'SIGNED_OUT') {
       if (realtimeChannel) { db.removeChannel(realtimeChannel); realtimeChannel = null; }
       currentUser = null;
       tasks = [];
+      showAuth();
+    }
+  });
+
+  // iOS PWA : quand l'app revient au premier plan, vérifier/rafraîchir la session
+  document.addEventListener('visibilitychange', async () => {
+    if (document.visibilityState !== 'visible') return;
+    const { data: { session } } = await db.auth.getSession();
+    if (!session && currentUser) {
+      // Session perdue pendant l'arrière-plan
+      currentUser = null;
+      tasks = [];
+      if (realtimeChannel) { db.removeChannel(realtimeChannel); realtimeChannel = null; }
       showAuth();
     }
   });
