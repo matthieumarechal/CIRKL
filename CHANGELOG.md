@@ -5,6 +5,15 @@ Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/).
 
 ---
 
+## [0.1.2] — Mauve Crépuscule — Avril 2026
+
+### Added
+- Ajout de la fonctionnalité "mot de passe oublié"
+- Ajout du champ "prénom" lors de l'inscription via compte e-mail
+- Affichage de votre prénom ou pseudo Discord dans le menu uniquement en version Desktop
+- Ajout de gros curseurs pour la souris (en essai pour le moment)
+
+
 ## [0.1.1] — Mauve Crépuscule — Avril 2026
 
 ### Added

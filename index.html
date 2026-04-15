@@ -71,6 +71,19 @@
     -webkit-tap-highlight-color: transparent;
   }
 
+  html, body {
+  cursor: url(https://cirkl.craftbench.fr/img/cursor/pointer.svg) 2 0, auto;
+  }
+
+  body :is(a,a *,a p,button,.task-item, button *,select,input[type=submit],input[type=button],input[type=radio],input[type=checkbox]) {
+    cursor: url(https://cirkl.craftbench.fr/img/cursor/pointer_links.svg) 12 0, pointer !important;
+  }
+
+  body.dragging-active,
+  body.dragging-active * {
+    cursor: url(https://cirkl.craftbench.fr/img/cursor/cursor_grab.svg) 12 12, grabbing !important;
+  }
+
   /* ── AUTH SCREEN ─────────────────────────────────────────────────────────── */
 
   #auth-screen {
@@ -1640,85 +1653,110 @@ function cancelClear() {
 }
 
 // ── DRAG & DROP ───────────────────────────────────────────────────────────────
+function startDrag(captureEl, el, index, startY) {
+  const rect     = el.getBoundingClientRect();
+  const cloneTop = rect.top;
+
+  const clone = el.cloneNode(true);
+  Object.assign(clone.style, {
+    position: 'fixed', top: cloneTop + 'px', left: rect.left + 'px',
+    width: rect.width + 'px', margin: '0', zIndex: '1000',
+    opacity: '0.88', boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
+    pointerEvents: 'none', transition: 'none', animation: 'none'
+  });
+  document.body.appendChild(clone);
+  el.style.opacity = '0.25';
+  document.body.classList.add('dragging-active');
+
+  const line = document.createElement('div');
+  Object.assign(line.style, {
+    position: 'fixed', height: '2px', background: 'var(--accent)',
+    borderRadius: '2px', pointerEvents: 'none', zIndex: '999',
+    left: rect.left + 'px', width: rect.width + 'px', display: 'none'
+  });
+  document.body.appendChild(line);
+
+  let targetIndex = null;
+
+  const onMove = e => {
+    clone.style.top = (cloneTop + e.clientY - startY) + 'px';
+    const items = [...document.querySelectorAll('.task-item')];
+    let gap = items.length;
+    for (let i = 0; i < items.length; i++) {
+      const r = items[i].getBoundingClientRect();
+      if (e.clientY < r.top + r.height / 2) { gap = i; break; }
+    }
+    targetIndex = gap > index ? gap - 1 : gap;
+    if (targetIndex === index) {
+      line.style.display = 'none';
+    } else {
+      let lineY;
+      if (gap === 0) {
+        lineY = items[0].getBoundingClientRect().top;
+      } else if (gap >= items.length) {
+        lineY = items[items.length - 1].getBoundingClientRect().bottom;
+      } else {
+        const rA = items[gap - 1].getBoundingClientRect();
+        const rB = items[gap].getBoundingClientRect();
+        lineY = (rA.bottom + rB.top) / 2;
+      }
+      line.style.top  = (lineY - 1) + 'px';
+      line.style.display = 'block';
+    }
+  };
+
+  const onUp = () => {
+    clone.remove();
+    line.remove();
+    el.style.opacity = '';
+    document.body.classList.remove('dragging-active');
+    if (targetIndex !== null && targetIndex !== index) {
+      const moved = tasks.splice(index, 1)[0];
+      tasks.splice(targetIndex, 0, moved);
+      savePositions();
+      render();
+    }
+    document.removeEventListener('pointermove', onMove);
+    document.removeEventListener('pointerup', onUp);
+    document.removeEventListener('pointercancel', onUp);
+  };
+
+  document.addEventListener('pointermove', onMove);
+  document.addEventListener('pointerup', onUp);
+  document.addEventListener('pointercancel', onUp);
+}
+
 function initDragHandle(handle, el, index) {
+  // Handle : déclenche le drag immédiatement (mobile + desktop)
   handle.addEventListener('click', e => e.stopPropagation());
   handle.addEventListener('pointerdown', e => {
     e.preventDefault();
     e.stopPropagation();
     handle.setPointerCapture(e.pointerId);
-
-    const rect     = el.getBoundingClientRect();
-    const startY   = e.clientY;
-    const cloneTop = rect.top;
-
-    const clone = el.cloneNode(true);
-    Object.assign(clone.style, {
-      position: 'fixed', top: cloneTop + 'px', left: rect.left + 'px',
-      width: rect.width + 'px', margin: '0', zIndex: '1000',
-      opacity: '0.88', boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
-      pointerEvents: 'none', transition: 'none', animation: 'none'
-    });
-    document.body.appendChild(clone);
-    el.style.opacity = '0.25';
-    document.body.classList.add('dragging-active');
-
-    const line = document.createElement('div');
-    Object.assign(line.style, {
-      position: 'fixed', height: '2px', background: 'var(--accent)',
-      borderRadius: '2px', pointerEvents: 'none', zIndex: '999',
-      left: rect.left + 'px', width: rect.width + 'px', display: 'none'
-    });
-    document.body.appendChild(line);
-
-    let targetIndex = null;
-
-    const onMove = e => {
-      clone.style.top = (cloneTop + e.clientY - startY) + 'px';
-      const items = [...document.querySelectorAll('.task-item')];
-      let gap = items.length;
-      for (let i = 0; i < items.length; i++) {
-        const r = items[i].getBoundingClientRect();
-        if (e.clientY < r.top + r.height / 2) { gap = i; break; }
-      }
-      targetIndex = gap > index ? gap - 1 : gap;
-      if (targetIndex === index) {
-        line.style.display = 'none';
-      } else {
-        let lineY;
-        if (gap === 0) {
-          lineY = items[0].getBoundingClientRect().top;
-        } else if (gap >= items.length) {
-          lineY = items[items.length - 1].getBoundingClientRect().bottom;
-        } else {
-          const rA = items[gap - 1].getBoundingClientRect();
-          const rB = items[gap].getBoundingClientRect();
-          lineY = (rA.bottom + rB.top) / 2;
-        }
-        line.style.top  = (lineY - 1) + 'px';
-        line.style.display = 'block';
-      }
-    };
-
-    const onUp = () => {
-      clone.remove();
-      line.remove();
-      el.style.opacity = '';
-      document.body.classList.remove('dragging-active');
-      if (targetIndex !== null && targetIndex !== index) {
-        const moved = tasks.splice(index, 1)[0];
-        tasks.splice(targetIndex, 0, moved);
-        savePositions(); // fire and forget
-        render();
-      }
-      document.removeEventListener('pointermove', onMove);
-      document.removeEventListener('pointerup', onUp);
-      document.removeEventListener('pointercancel', onUp);
-    };
-
-    document.addEventListener('pointermove', onMove);
-    document.addEventListener('pointerup', onUp);
-    document.addEventListener('pointercancel', onUp);
+    startDrag(handle, el, index, e.clientY);
   });
+
+  // Desktop uniquement : drag depuis toute la task avec seuil de 5px
+  if (window.matchMedia('(pointer: fine)').matches) {
+    el.addEventListener('pointerdown', e => {
+      if (e.target.closest('.checkbox') || e.target.closest('[data-delete]') || e.target.closest('.drag-handle')) return;
+      const startX = e.clientX, startY = e.clientY;
+
+      const onMove = mv => {
+        if (Math.abs(mv.clientX - startX) < 5 && Math.abs(mv.clientY - startY) < 5) return;
+        el.removeEventListener('pointermove', onMove);
+        el.removeEventListener('pointerup', onCancel);
+        el.setPointerCapture(mv.pointerId);
+        startDrag(el, el, index, startY);
+      };
+      const onCancel = () => {
+        el.removeEventListener('pointermove', onMove);
+        el.removeEventListener('pointerup', onCancel);
+      };
+      el.addEventListener('pointermove', onMove);
+      el.addEventListener('pointerup', onCancel);
+    });
+  }
 }
 
 // ── CONFETTI ──────────────────────────────────────────────────────────────────
