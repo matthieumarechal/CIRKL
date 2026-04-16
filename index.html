@@ -370,6 +370,18 @@
     #points-display { display: block; }
   }
 
+  .points-particle {
+    position: fixed;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--accent);
+    pointer-events: none;
+    z-index: 9999;
+    transform: translate(-50%, -50%);
+    transition: none;
+  }
+
   #uncheck-btn {
     font-family: 'DM Sans', sans-serif;
     font-size: 0.78rem;
@@ -1435,20 +1447,18 @@ async function awardPointsForTask(taskId) {
 
   const { data: existing } = await db.from('points_log')
     .select('id').eq('user_id', currentUser.id).eq('task_id', taskId).eq('log_date', today).maybeSingle();
-  if (existing) return;
+  if (existing) return 0;
 
   const { data: todayLogs } = await db.from('points_log')
     .select('id').eq('user_id', currentUser.id).eq('log_date', today).eq('reason', 'task_complete');
-  const rank = (todayLogs?.length || 0) + 1;
-  const pointsScale = [25, 20, 15, 10, 5];
-  const points = rank <= 5 ? pointsScale[rank - 1] : 1;
+  const points = 25; // TEST — limitation désactivée
 
   await db.from('points_log').insert({ user_id: currentUser.id, task_id: taskId, points, log_date: today, reason: 'task_complete' });
 
   const newBalance = userPointsBalance + points;
   await db.from('user_points').upsert({ user_id: currentUser.id, balance: newBalance, updated_at: new Date().toISOString() });
   userPointsBalance = newBalance;
-  updatePointsDisplay();
+  return points;
 }
 
 async function checkAllTasksBonus() {
@@ -1456,17 +1466,74 @@ async function checkAllTasksBonus() {
 
   const { data: bonusLog } = await db.from('points_log')
     .select('id').eq('user_id', currentUser.id).eq('log_date', today).eq('reason', 'all_tasks_bonus').maybeSingle();
-  if (bonusLog) return;
+  if (bonusLog) return 0;
 
   const allDone = tasks.length > 0 && tasks.every(t => t.done);
-  if (!allDone) return;
+  if (!allDone) return 0;
 
   await db.from('points_log').insert({ user_id: currentUser.id, task_id: null, points: 50, log_date: today, reason: 'all_tasks_bonus' });
 
   const newBalance = userPointsBalance + 50;
   await db.from('user_points').upsert({ user_id: currentUser.id, balance: newBalance, updated_at: new Date().toISOString() });
   userPointsBalance = newBalance;
+  return 50;
+}
+
+function animatePointsGain(sourceEl, points) {
+  const targetEl = document.getElementById('points-display');
+  if (!targetEl || !targetEl.offsetParent) return;
+
+  const sourceRect = sourceEl.getBoundingClientRect();
+  const targetRect = targetEl.getBoundingClientRect();
+  const startX = sourceRect.left + sourceRect.width / 2;
+  const startY = sourceRect.top + sourceRect.height / 2;
+  const endX = targetRect.left + targetRect.width / 2;
+  const endY = targetRect.top + targetRect.height / 2;
+
+  // Recule l'affichage pour animer unité par unité
+  userPointsBalance -= points;
   updatePointsDisplay();
+
+  // Plus on gagne de points, plus les particules vont vite
+  const ratio = Math.min(points, 25) / 25; // 0 à 1
+  const spreadDur = Math.round((0.4 - ratio * 0.15) * 1000); // 400ms (1pt) → 250ms (25pts)
+  const flyDur    = Math.round((1.1 - ratio * 0.5) * 1000);  // 1100ms (1pt) → 600ms (25pts)
+
+  for (let i = 0; i < points; i++) {
+    setTimeout(() => {
+      const p = document.createElement('div');
+      p.className = 'points-particle';
+      p.style.left = startX + 'px';
+      p.style.top = startY + 'px';
+      document.body.appendChild(p);
+
+      const spreadX = startX + (Math.random() - 0.5) * 60;
+      const spreadY = startY + (Math.random() - 0.5) * 60;
+
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        p.style.transition = `left ${spreadDur}ms ease-out, top ${spreadDur}ms ease-out`;
+        p.style.left = spreadX + 'px';
+        p.style.top = spreadY + 'px';
+
+        setTimeout(() => {
+          p.style.transition = `left ${flyDur}ms ease-in, top ${flyDur}ms ease-in`;
+          p.style.left = endX + 'px';
+          p.style.top = endY + 'px';
+
+          setTimeout(() => {
+            p.remove();
+            userPointsBalance++;
+            updatePointsDisplay();
+            const arrivedIndex = i + 1;
+            const isLast = arrivedIndex === points;
+            if (arrivedIndex % 5 === 0 || isLast) {
+              playPointsTick(Math.ceil(arrivedIndex / 5), isLast);
+            }
+          }, flyDur);
+        }, spreadDur);
+      }));
+    }, i * 15);
+  }
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
@@ -1624,7 +1691,12 @@ async function toggleTask(i, el) {
     explodeConfetti(el);
     playChime();
     if (allDone) setTimeout(() => { victoryRain(); playVictory(); }, 250);
-    awardPointsForTask(tasks[i].id).then(() => { if (allDone) checkAllTasksBonus(); });
+    awardPointsForTask(tasks[i].id).then(pts => {
+      if (pts > 0) animatePointsGain(el, pts);
+      if (allDone) checkAllTasksBonus().then(bonus => {
+        if (bonus > 0) setTimeout(() => animatePointsGain(el, bonus), pts > 0 ? 600 : 0);
+      });
+    });
   }
   updateCounter();
 
@@ -1957,6 +2029,22 @@ function playChime() {
       gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + i * 0.08 + 0.35);
       osc.start(ac.currentTime + i * 0.08); osc.stop(ac.currentTime + i * 0.08 + 0.4);
     });
+  } catch(e) {}
+}
+
+function playPointsTick(tickIndex, isLast) {
+  try {
+    const ac = getAudioCtx();
+    const freq = 900 + tickIndex * 70;
+    const volume = isLast ? 0.14 : 0.07;
+    const duration = isLast ? 0.18 : 0.08;
+    const osc = ac.createOscillator(); const gain = ac.createGain();
+    osc.connect(gain); gain.connect(ac.destination);
+    osc.type = 'sine'; osc.frequency.setValueAtTime(freq, ac.currentTime);
+    gain.gain.setValueAtTime(0, ac.currentTime);
+    gain.gain.linearRampToValueAtTime(volume, ac.currentTime + 0.005);
+    gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + duration);
+    osc.start(ac.currentTime); osc.stop(ac.currentTime + duration);
   } catch(e) {}
 }
 
