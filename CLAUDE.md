@@ -1,0 +1,102 @@
+# CIRKL — Claude Context
+
+Application web PWA de gestion de tâches routinières personnelle. Projet solo de Matthieu.
+
+## Architecture
+
+**Tout le projet tient dans un seul fichier : `index.html`**
+CSS, HTML, et JavaScript sont tous dans ce fichier. Il n'y a pas de build step, pas de framework, pas de bundler.
+
+- `img/` — assets (icônes PWA, splash screens iOS, curseurs custom, `img/icon/miriel.svg`)
+- `CHANGELOG.md`, `README.md` — documentation
+- Repo GitHub : `git@github.com:matthieumarechal/cirkl.git`
+
+## Supabase
+
+Deux projets Supabase séparés (données isolées, schéma identique) :
+
+**Prod** — `cirkl.craftbench.fr`
+```
+URL  : https://orcfwzmejmbeluvpyspc.supabase.co
+ANON : sb_publishable_Dt9kU8AybQhJNtwIbPG59g_Qd7O9LmF
+```
+
+**Dev** — `cirkl-prod.craftbench.fr` (nom trompeur, c'est bien le site de DEV)
+```
+URL  : https://aeftmtflthbkawiezucr.supabase.co
+ANON : sb_publishable_Cuk6o3dc2z4abZDVTRncMA_NyIXSUu1
+```
+
+Pour basculer entre les deux : commenter/décommenter les deux blocs `const SUPABASE_URL / SUPABASE_ANON` vers la ligne 1147 de `index.html`.
+
+La clé `anon` en clair dans le frontend est **sûre** grâce au Row Level Security (RLS) Supabase. Ne jamais mettre la clé `service_role` dans le code.
+
+Auth : email/password + Discord OAuth (Discord pas configuré sur dev, email seulement). Cloudflare Turnstile anti-bot sur l'écran de connexion (même widget, plusieurs domaines configurés).
+
+## Schéma base de données
+
+```sql
+-- Tâches
+tasks (
+  id uuid PK,
+  user_id uuid FK auth.users,
+  text text,
+  done boolean,
+  position integer,
+  created_at timestamptz
+)
+
+-- Système de points
+user_points (
+  user_id uuid PK FK auth.users,
+  balance integer,
+  updated_at timestamptz
+)
+
+points_log (
+  id uuid PK,
+  user_id uuid FK auth.users,
+  task_id uuid FK tasks (nullable),
+  points integer,
+  log_date date,         -- clé anti-abus : 1 récompense par task par jour
+  reason text,           -- 'task_complete' | 'all_tasks_bonus'
+  created_at timestamptz
+)
+```
+
+Toutes les tables ont RLS activé (politique `auth.uid() = user_id`).
+
+## Fonctionnalités implémentées
+
+- Auth email/password + Discord OAuth
+- CRUD tâches avec drag & drop pour réordonner
+- Reset quotidien des tâches (bouton)
+- Confettis + son au cochage d'une tâche
+- Pluie de confettis + son de victoire quand toutes les tâches sont faites
+- **Système de points** :
+  - Barème dégressif : 25, 20, 15, 10, 5, puis 1 pt par tâche cochée dans la journée
+  - Bonus 50 pts quand toutes les tâches sont complétées
+  - Anti-abus : `log_date` empêche de re-gagner des points en cochant/décochant
+  - Animation particules depuis le point de clic vers le compteur en header
+  - Sons (Web Audio API) : tick toutes les 5 particules, pitch proportionnel aux points gagnés
+  - Icône `miriel.svg` comme symbole monétaire
+  - Affiché uniquement sur desktop (≥769px), mais les points sont comptabilisés sur mobile aussi
+
+## Points à faire
+
+- **Shop / utilisation des points** : à définir (idées : thèmes de couleur, effets particules alternatifs, badges/titres...)
+- **CLAUDE.md** : ce fichier — à pousser sur GitHub
+- **E2E encryption** : Web Crypto API, AES-GCM 256 bits, avant lancement public
+- **Support Android PWA** : à étudier
+
+## Branches git notables
+
+- `main` — branche prod déployée
+- `feature/points` — système de points (à merger dans main)
+- `feature/realtime` — sync temps réel entre onglets (en attente)
+
+## Déploiement
+
+Déploiement manuel : modifier `index.html`, pousser sur GitHub. Le serveur (`craftbench.fr`) récupère depuis GitHub (mécanisme exact non documenté ici).
+
+Quand une feature est validée sur dev → faire tourner le même SQL sur la BDD prod via Supabase SQL Editor avant de déployer.
