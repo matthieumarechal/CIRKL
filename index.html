@@ -620,40 +620,16 @@
     bottom: 0;
     left: 0;
     right: 0;
+    background: var(--surface);
     border-top: 1px solid var(--border);
+    padding: 12px 1.5rem calc(12px + env(safe-area-inset-bottom, 0px));
     display: flex;
-    flex-direction: column;
-    gap: 0;
+    gap: 10px;
+    align-items: center;
     z-index: 20;
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     background: rgba(253,250,244,0.92);
-  }
-
-  .input-row {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    padding: 12px 1.5rem calc(12px + env(safe-area-inset-bottom, 0px));
-  }
-
-  #mobile-points {
-    display: none;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
-    padding: 7px 1.5rem 7px;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.78rem;
-    font-weight: 500;
-    color: var(--ink2);
-    user-select: none;
-    pointer-events: none;
-    border-bottom: 1px solid var(--border);
-  }
-
-  @media (max-width: 768px) {
-    #mobile-points { display: flex; }
   }
 
   #new-task-input {
@@ -716,11 +692,33 @@
 
   #progress-bar.full { background: #639922; }
 
+  #counter-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.3rem 1.5rem 0.4rem;
+  }
+
   #counter {
     font-size: 0.82rem;
     color: var(--ink2);
-    padding: 0.3rem 1.5rem 0.4rem;
     font-weight: 300;
+  }
+
+  #mobile-points {
+    display: none;
+    align-items: center;
+    gap: 4px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--ink2);
+    user-select: none;
+    pointer-events: none;
+  }
+
+  @media (max-width: 768px) {
+    #mobile-points { display: flex; }
   }
 
   #confirm-bar {
@@ -1141,7 +1139,10 @@
   <div id="progress-wrap">
     <div id="progress-track"><div id="progress-bar"></div></div>
   </div>
-  <div id="counter"></div>
+  <div id="counter-row">
+    <div id="counter"></div>
+    <span id="mobile-points"></span>
+  </div>
 </div>
 <div id="confirm-bar">
   <span>Effacer toutes les tâches ?</span>
@@ -1153,15 +1154,12 @@
 <div id="task-list"></div>
 
 <div class="input-bar">
-  <div id="mobile-points"></div>
-  <div class="input-row">
-    <input id="new-task-input" type="text" placeholder="Ajouter une tâche…" maxlength="120" autocomplete="off" autocorrect="off" spellcheck="false">
-    <button id="add-btn" onclick="addTask()">
-      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-        <path d="M10 4V16M4 10H16" stroke="white" stroke-width="2.2" stroke-linecap="round"/>
-      </svg>
-    </button>
-  </div>
+  <input id="new-task-input" type="text" placeholder="Ajouter une tâche…" maxlength="120" autocomplete="off" autocorrect="off" spellcheck="false">
+  <button id="add-btn" onclick="addTask()">
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <path d="M10 4V16M4 10H16" stroke="white" stroke-width="2.2" stroke-linecap="round"/>
+    </svg>
+  </button>
 </div>
 
 </div><!-- #app -->
