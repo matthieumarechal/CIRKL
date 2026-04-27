@@ -752,6 +752,85 @@
   #confirm-yes { background: #E24B4A; color: white; }
   #confirm-no { background: rgba(44,42,36,0.08); color: var(--ink); }
 
+  /* ── UNDO TOAST ─────────────────────────────────────────────────────────── */
+
+  #undo-toast {
+    position: fixed;
+    bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+    right: 1.5rem;
+    background: var(--ink);
+    color: var(--bg);
+    border-radius: 12px;
+    padding: 11px 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.86rem;
+    z-index: 200;
+    box-shadow: 0 4px 20px rgba(44,42,36,0.22);
+    overflow: hidden;
+    min-width: 220px;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.2s, transform 0.2s;
+    pointer-events: none;
+  }
+
+  #undo-toast.visible {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  #undo-toast-msg { flex: 1; }
+
+  #undo-btn {
+    background: none;
+    border: 1px solid rgba(253,250,244,0.3);
+    border-radius: 8px;
+    color: inherit;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 500;
+    padding: 4px 10px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.12s;
+  }
+
+  #undo-btn:hover { background: rgba(253,250,244,0.12); }
+
+  #undo-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 3px;
+    width: 100%;
+    background: var(--accent);
+  }
+
+  #undo-progress.running {
+    animation: undoShrink 10s linear forwards;
+  }
+
+  @keyframes undoShrink {
+    from { width: 100%; }
+    to   { width: 0%; }
+  }
+
+  @media (max-width: 768px) {
+    #undo-toast {
+      right: auto;
+      left: 50%;
+      transform: translateX(-50%) translateY(10px);
+      min-width: 260px;
+    }
+    #undo-toast.visible {
+      transform: translateX(-50%) translateY(0);
+    }
+  }
+
   #confetti-canvas {
     position: fixed;
     top: 0; left: 0;
@@ -1078,7 +1157,7 @@
       <ul>
         <li>Ajout d'un système de points (les Bogomils) avec barème dégressif (25→1 pt par tâche, bonus 50 pts si tout terminé - barème suceptible de changer - récompense en cours d'élaboration)</li>
         <li>Système anti-abus par jour pour les Bogomils</li>
-        <li>Animation de particules quand on gagne des Bogomils</li>
+        <li>Animation de particulesg quand on gagne des Bogomils</li>
       </ul>
     </div>
   </div>
@@ -1164,6 +1243,12 @@
 
 <canvas id="confetti-canvas"></canvas>
 
+<div id="undo-toast">
+  <span id="undo-toast-msg">Tâche supprimée</span>
+  <button id="undo-btn" onclick="undoDelete()">Annuler</button>
+  <div id="undo-progress"></div>
+</div>
+
 <script>
 // ── SUPABASE SETUP ────────────────────────────────────────────────────────────
 
@@ -1189,6 +1274,8 @@ let tasks = [];
 let currentUser = null;
 let passwordRecoveryMode = false;
 let userPointsBalance = 0;
+let undoTask = null;
+let undoTimer = null;
 let realtimeChannel = null;
 
 // ── DOM REFS ──────────────────────────────────────────────────────────────────
@@ -1744,11 +1831,53 @@ async function uncheckAll() {
 }
 
 async function deleteTask(i) {
-  const id = tasks[i].id;
+  if (undoTask) await commitDelete();
+
+  undoTask = { ...tasks[i] };
   tasks.splice(i, 1);
   render();
   playDelete();
+  showUndoToast(undoTask.text);
+
+  undoTimer = setTimeout(() => commitDelete(), 10000);
+}
+
+async function commitDelete() {
+  if (!undoTask) return;
+  const id = undoTask.id;
+  undoTask = null;
+  clearTimeout(undoTimer);
+  undoTimer = null;
+  hideUndoToast();
   await db.from('tasks').delete().eq('id', id);
+}
+
+function undoDelete() {
+  if (!undoTask) return;
+  const task = undoTask;
+  undoTask = null;
+  clearTimeout(undoTimer);
+  undoTimer = null;
+  hideUndoToast();
+
+  tasks.push(task);
+  tasks.sort((a, b) => a.position - b.position);
+  render();
+}
+
+function showUndoToast(text) {
+  const toast    = document.getElementById('undo-toast');
+  const msg      = document.getElementById('undo-toast-msg');
+  const progress = document.getElementById('undo-progress');
+  msg.textContent = `"${text}" supprimée`;
+  progress.classList.remove('running');
+  void progress.offsetWidth;
+  progress.classList.add('running');
+  toast.classList.add('visible');
+}
+
+function hideUndoToast() {
+  document.getElementById('undo-toast').classList.remove('visible');
 }
 
 async function confirmClear() {
