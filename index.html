@@ -642,13 +642,14 @@
     align-items: center;
     justify-content: center;
     gap: 5px;
-    padding: 7px 1.5rem 4px;
+    padding: 7px 1.5rem 7px;
     font-family: 'DM Sans', sans-serif;
     font-size: 0.78rem;
     font-weight: 500;
     color: var(--ink2);
     user-select: none;
     pointer-events: none;
+    border-bottom: 1px solid var(--border);
   }
 
   @media (max-width: 768px) {
@@ -1469,7 +1470,7 @@ function updatePointsDisplay() {
   const desktop = document.getElementById('points-display');
   const mobile  = document.getElementById('mobile-points');
   if (desktop) desktop.innerHTML = content;
-  if (mobile)  mobile.innerHTML  = content;
+  if (mobile)  mobile.innerHTML  = content + `<span style="opacity:0.5;font-size:0.72rem;margin-left:2px;">Bogomils</span>`;
 }
 
 async function awardPointsForTask(taskId) {
