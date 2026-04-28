@@ -902,7 +902,7 @@
     z-index: 100;
     align-items: center;
     justify-content: center;
-    padding: 1.5rem;
+    padding: 50px 1.5rem;
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
   }
@@ -912,7 +912,7 @@
   #modal-card {
     width: 100%;
     max-width: 560px;
-    max-height: 85svh;
+    height: calc(100svh - 100px);
     background: var(--surface);
     border: 1px solid var(--surface2);
     border-radius: 24px 0 0 24px;
@@ -1063,6 +1063,118 @@
   .modal-section.version-section ul li::before {
     color: #ffb70f;
   }
+
+  /* ── Accordion ── */
+  .accordion-list {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .accordion-item {
+    border-bottom: 1px solid var(--border);
+  }
+  .accordion-item:last-child {
+    border-bottom: none;
+  }
+  .accordion-trigger {
+    width: 100%;
+    background: none;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.85rem 1.1rem;
+    cursor: pointer;
+    text-align: left;
+    gap: 0.5rem;
+    transition: background 0.15s;
+  }
+  .accordion-trigger:hover { background: var(--surface2); }
+  .accordion-trigger-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .accordion-chevron {
+    font-size: 0.7rem;
+    color: var(--accent);
+    transition: transform 0.25s ease;
+    flex-shrink: 0;
+    opacity: 0.65;
+  }
+  .accordion-item.open .accordion-chevron {
+    transform: rotate(180deg);
+  }
+  .accordion-body {
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height 0.32s ease;
+  }
+  .accordion-item.open .accordion-body {
+    max-height: 900px;
+  }
+  .accordion-body-inner {
+    padding: 0.2rem 1.1rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .accordion-body-inner p {
+    font-size: 0.92rem;
+    color: var(--ink2);
+    line-height: 1.6;
+  }
+  .accordion-body-inner ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .accordion-body-inner ul li {
+    font-size: 0.92rem;
+    color: var(--ink2);
+    line-height: 1.5;
+    padding-left: 1.2rem;
+    position: relative;
+  }
+  .accordion-body-inner ul li::before {
+    content: '·';
+    position: absolute;
+    left: 0;
+    color: var(--accent);
+    font-weight: 700;
+  }
+  .accordion-body-inner strong {
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .accordion-item.version-item .accordion-trigger {
+    background: #fffba8;
+  }
+  .accordion-item.version-item .accordion-trigger:hover {
+    background: #fff09a;
+  }
+  .accordion-item.version-item .accordion-trigger-label {
+    color: #ffb70f;
+  }
+  .accordion-item.version-item .accordion-chevron {
+    color: #ffb70f;
+  }
+  .accordion-item.version-item .accordion-body {
+    background: #fffba8;
+  }
+  .accordion-item.version-item .accordion-body-inner ul li {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.72rem;
+    color: #dd8c2fba;
+  }
+  .accordion-item.version-item .accordion-body-inner ul li::before {
+    color: #ffb70f;
+  }
 </style>
 </head>
 <body>
@@ -1120,45 +1232,112 @@
       <button id="modal-close" onclick="closeInfoModal()" title="Fermer">✕</button>
     </div>
 
-    <div class="modal-section">
-      <h3>C'est quoi ?</h3>
-      <p>Un gestionnaire de tâches simple, intuitif et convivial, conçu pour celles et ceux qui ont du mal à gérer certaines tâches que d'autres trouvent faciles. Des petits sons sont présents pour vous féliciter quand une et toutes les tâches sont accomplies.</p>
-    </div>
+    <div class="accordion-list">
 
-    <div class="modal-section">
-      <h3>Comment ça marche ?</h3>
-      <ul>
-        <li>Ajoute tes propres tâches dans le champ en bas de l'écran, elles t'appartiennent et personne d'autre ne les voit.</li>
-        <li>Appuie sur une tâche pour la cocher ou la décocher.</li>
-        <li>tu peux supprimer une tâche de la liste en appuyant sur la croix à droite de celle-ci</li>
-        <li>Maintiens une tâche et glisse-la pour réorganiser l'ordre à ta convenance. (Sur mobile, utilise bien les icones sur la droite des tâches)</li>
-        <li>Tes tâches sont synchronisées en temps réel sur tous tes appareils connectés avec le même compte.</li>
-        <li>Le matin, tu peux utiliser le bouton "Tout décocher" pour remettre la liste des tâches à zéro</li>
-      </ul>
-    </div>
-
-    <p style="font-size:0.78rem; color:var(--ink2); padding: 0 0 0.25rem; line-height:1.5;">En utilisant CIRKL, vous acceptez l'utilisation d'Umami Analytics, un outil respectueux de la vie privée sans cookie de tracking.</p>
-    <p style="font-size:0.78rem; color:var(--ink2); padding: 0 0 0.25rem; line-height:1.5;">CIRKL est un projet amateur qui avait pour but de répondre au besoin d'une personne. Il est fort probable que des bugs se baladent par ci par là. De nouvelles fonctionnalités pourront voir le jour et seront documentées ci dessous.</p>
-    <div class="modal-section">
-      <h3>Bugs connus / améliorations</h3>
-      <ul>
-        <li>L'app demande souvent de se reconnecter</li>
-        <li>Développer les récompense pour les points</li>
-      </ul>
-    </div>
-
-    <div class="modal-section version-section">
-      <h3>Version</h3>
-      <div class="modal-version">
-        <span class="modal-version-badge">v0.1.3</span>
-        <span class="modal-version-name">Sorbet Mimosa</span>
-        <span class="modal-version-date">27 Avril 2026</span>
+      <div class="accordion-item open">
+        <button class="accordion-trigger" onclick="toggleAccordion(this)">
+          <span class="accordion-trigger-label">C'est quoi ?</span>
+          <span class="accordion-chevron">▾</span>
+        </button>
+        <div class="accordion-body">
+          <div class="accordion-body-inner">
+            <p>Un gestionnaire de tâches simple, intuitif et convivial, conçu pour celles et ceux qui ont du mal à gérer certaines tâches que d'autres trouvent faciles. Des petits sons sont présents pour vous féliciter quand une et toutes les tâches sont accomplies.</p>
+          </div>
+        </div>
       </div>
-      <ul>
-        <li>Ajout d'un système de points (les Bogomils) avec barème dégressif (25→1 pt par tâche, bonus 50 pts si tout terminé - barème suceptible de changer - récompense en cours d'élaboration)</li>
-        <li>Système anti-abus par jour pour les Bogomils</li>
-        <li>Animation de particulesg quand on gagne des Bogomils</li>
-      </ul>
+
+      <div class="accordion-item">
+        <button class="accordion-trigger" onclick="toggleAccordion(this)">
+          <span class="accordion-trigger-label">Comment ça marche ?</span>
+          <span class="accordion-chevron">▾</span>
+        </button>
+        <div class="accordion-body">
+          <div class="accordion-body-inner">
+            <ul>
+              <li>Ajoute tes propres tâches dans le champ en bas de l'écran, elles t'appartiennent et personne d'autre ne les voit.</li>
+              <li>Appuie sur une tâche pour la cocher ou la décocher.</li>
+              <li>Tu peux supprimer une tâche en appuyant sur la croix à droite — un bouton "Annuler" apparaît quelques secondes si tu changes d'avis.</li>
+              <li>Maintiens une tâche et glisse-la pour réorganiser l'ordre à ta convenance. (Sur mobile, utilise les icônes à droite des tâches)</li>
+              <li>Tes tâches sont synchronisées en temps réel sur tous tes appareils connectés avec le même compte.</li>
+              <li>Le matin, tu peux utiliser le bouton "Tout décocher" pour remettre la liste à zéro.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="accordion-item">
+        <button class="accordion-trigger" onclick="toggleAccordion(this)">
+          <span class="accordion-trigger-label">Gestion des points</span>
+          <span class="accordion-chevron">▾</span>
+        </button>
+        <div class="accordion-body">
+          <div class="accordion-body-inner">
+            <p>La monnaie de CIRKL s'appelle les <strong>Bogomils</strong>. Tu en gagnes chaque fois que tu coches une tâche, selon un barème dégressif sur la journée :</p>
+            <ul>
+              <li>1ère tâche : <strong>25 pts</strong></li>
+              <li>2e tâche : <strong>20 pts</strong></li>
+              <li>3e tâche : <strong>15 pts</strong></li>
+              <li>4e tâche : <strong>10 pts</strong></li>
+              <li>5e tâche : <strong>5 pts</strong></li>
+              <li>Au-delà : <strong>1 pt</strong> par tâche</li>
+            </ul>
+            <p>Bonus : <strong>+50 pts</strong> quand toutes tes tâches sont complétées dans la journée.</p>
+            <p>Chaque tâche ne rapporte des points qu'une seule fois par jour — cocher et décocher ne remet pas les compteurs en jeu.</p>
+            <p style="font-size:0.82rem;font-style:italic;opacity:0.55;">Les récompenses pour les Bogomils sont en cours d'élaboration...</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="accordion-item">
+        <button class="accordion-trigger" onclick="toggleAccordion(this)">
+          <span class="accordion-trigger-label">Bugs connus / améliorations</span>
+          <span class="accordion-chevron">▾</span>
+        </button>
+        <div class="accordion-body">
+          <div class="accordion-body-inner">
+            <ul>
+              <li>L'app demande parfois de se reconnecter</li>
+              <li>Développer les récompenses pour les Bogomils</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="accordion-item">
+        <button class="accordion-trigger" onclick="toggleAccordion(this)">
+          <span class="accordion-trigger-label">Disclaimer</span>
+          <span class="accordion-chevron">▾</span>
+        </button>
+        <div class="accordion-body">
+          <div class="accordion-body-inner">
+            <p>En utilisant CIRKL, vous acceptez l'utilisation d'Umami Analytics, un outil respectueux de la vie privée sans cookie de tracking.</p>
+            <p>CIRKL est un projet amateur qui avait pour but de répondre au besoin d'une personne. Il est fort probable que des bugs se baladent par ci par là. De nouvelles fonctionnalités pourront voir le jour et seront documentées ci-dessous.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="accordion-item version-item">
+        <button class="accordion-trigger" onclick="toggleAccordion(this)">
+          <span class="accordion-trigger-label">Notes de version</span>
+          <span class="accordion-chevron">▾</span>
+        </button>
+        <div class="accordion-body">
+          <div class="accordion-body-inner">
+            <div class="modal-version">
+              <span class="modal-version-badge">v0.1.3</span>
+              <span class="modal-version-name">Sorbet Mimosa</span>
+              <span class="modal-version-date">27 Avril 2026</span>
+            </div>
+            <ul>
+              <li>Ajout d'un système de points (les Bogomils) avec barème dégressif (25→1 pt par tâche, bonus 50 pts si tout terminé — récompenses en cours d'élaboration)</li>
+              <li>Système anti-abus par jour pour les Bogomils</li>
+              <li>Animation de particules quand on gagne des Bogomils</li>
+              <li>Suppression de tâche avec possibilité d'annuler (10 secondes)</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -1502,6 +1681,14 @@ document.addEventListener('click', e => {
 });
 
 // ── MODAL ─────────────────────────────────────────────────────────────────────
+function toggleAccordion(btn) {
+  const item = btn.closest('.accordion-item');
+  const list = item.closest('.accordion-list');
+  const isOpen = item.classList.contains('open');
+  list.querySelectorAll('.accordion-item').forEach(el => el.classList.remove('open'));
+  if (!isOpen) item.classList.add('open');
+}
+
 function openInfoModal() {
   document.getElementById('modal-overlay').classList.add('visible');
 }
