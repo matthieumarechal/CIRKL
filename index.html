@@ -1685,8 +1685,14 @@ function toggleAccordion(btn) {
   const item = btn.closest('.accordion-item');
   const list = item.closest('.accordion-list');
   const isOpen = item.classList.contains('open');
-  list.querySelectorAll('.accordion-item').forEach(el => el.classList.remove('open'));
-  if (!isOpen) item.classList.add('open');
+  const openItem = list.querySelector('.accordion-item.open');
+
+  if (openItem && openItem !== item) {
+    openItem.classList.remove('open');
+    if (!isOpen) setTimeout(() => item.classList.add('open'), 320);
+  } else {
+    item.classList.toggle('open', !isOpen);
+  }
 }
 
 function openInfoModal() {
