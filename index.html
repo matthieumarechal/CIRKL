@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>CIRKL | Routine tasks made easy</title>
 
+<!-- Favicon -->
+<link rel="icon" href="img/icon/favicon.ico" sizes="32x32">
+
 <!-- PWA -->
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#F5F0E8">
@@ -649,6 +652,7 @@
     outline: none;
     transition: border-color 0.15s, background 0.15s;
     -webkit-appearance: none;
+    cursor: url(https://cirkl.craftbench.fr/img/cursor/cursor_text.svg) 12 12, text;
   }
 
   #new-task-input::placeholder { color: var(--ink2); opacity: 0.7; }
@@ -1393,15 +1397,15 @@
 <header>
   <h1>CIRKL<span>·</span></h1>
   <div class="header-actions">
-    <span id="points-display"></span>
     <span id="greeting"></span>
+    <span id="points-display"></span>
     <button id="uncheck-btn" onclick="uncheckAll()" title="Tout décocher">
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
         <circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.5"/>
       </svg>
       Tout décocher
     </button>
-    <button id="clear-btn" onclick="clearAll()">Effacer</button>
+    <button id="clear-btn" onclick="clearAll()">Tout effacer</button>
     <button id="info-btn" onclick="openInfoModal()" title="À propos">?</button>
     <button id="logout-btn" onclick="signOut()" title="Se déconnecter">↪</button>
     <button id="hamburger-btn" onclick="toggleHamburger()" title="Menu" aria-label="Menu">
