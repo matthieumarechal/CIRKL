@@ -918,6 +918,7 @@
     border-radius: 24px;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
     scrollbar-width: thin;
     scrollbar-color: rgba(44,42,36,0.2) transparent;
     padding: 2rem;
@@ -1163,6 +1164,56 @@
   }
   .accordion-item.version-item .accordion-body-inner ul li::before {
     color: #ffb70f;
+  }
+
+  @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to   { transform: translateY(0); }
+  }
+
+  @media (max-width: 768px) {
+    #modal-overlay {
+      padding: 0;
+    }
+    #modal-card {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      max-width: 100%;
+      height: 85svh;
+      border-radius: 24px 24px 0 0;
+      padding: 1.5rem 1.2rem 0;
+      overflow: hidden;
+      animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1) both;
+    }
+    #modal-card .accordion-list {
+      flex: 1;
+      min-height: 0;
+      overflow-y: scroll;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+      padding-bottom: 1.5rem;
+    }
+    .accordion-list {
+      border: none;
+      border-radius: 0;
+    }
+    .accordion-item {
+      border-bottom: none;
+      border-top: 1px solid rgba(44,42,36,0.08);
+    }
+    .accordion-item:last-child {
+      border-bottom: 1px solid rgba(44,42,36,0.08);
+    }
+    .accordion-trigger {
+      padding-left: 0;
+      padding-right: 0;
+    }
+    .accordion-body-inner {
+      padding-left: 0;
+      padding-right: 0;
+    }
   }
 </style>
 </head>
@@ -1686,10 +1737,12 @@ function toggleAccordion(btn) {
 
 function openInfoModal() {
   document.getElementById('modal-overlay').classList.add('visible');
+  document.body.style.overflow = 'hidden';
 }
 
 function closeInfoModal() {
   document.getElementById('modal-overlay').classList.remove('visible');
+  document.body.style.overflow = '';
 }
 
 function closeModal(e) {
@@ -1709,6 +1762,10 @@ function showAuth() {
 }
 
 function showApp() {
+  if (window.turnstile && turnstileWidgetId != null) {
+    window.turnstile.remove(turnstileWidgetId);
+    turnstileWidgetId = null;
+  }
   authScreen.classList.remove('visible');
   appEl.classList.add('visible');
   updateGreeting();
