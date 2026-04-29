@@ -526,6 +526,51 @@
   .hamburger-item.danger { color: #A32D2D; }
   .hamburger-item.danger:hover { background: #FCEBEB; }
 
+  .greeting-wrapper {
+    position: relative;
+  }
+
+  #greeting {
+    cursor: url(https://cirkl.craftbench.fr/img/cursor/pointer_links.svg) 12 0, pointer !important;
+    pointer-events: auto;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+  }
+
+  #greeting:hover {
+    background: var(--surface2);
+    border-color: rgba(44,42,36,0.25);
+    color: var(--ink);
+  }
+
+  .greeting-popup {
+    display: none;
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(44,42,36,0.12);
+    z-index: 50;
+    min-width: 220px;
+    overflow: hidden;
+    animation: menuSlideIn 0.18s cubic-bezier(0.34,1.4,0.64,1) both;
+    white-space: nowrap;
+  }
+
+  .greeting-popup.open { display: block; }
+
+  .greeting-popup-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 18px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.92rem;
+    font-weight: 400;
+    color: var(--ink);
+  }
+
   @media (max-width: 768px) {
     #clear-btn, #info-btn, #logout-btn { display: none; }
     #hamburger-btn { display: flex; }
@@ -1344,7 +1389,7 @@
               <li>Maintiens une tâche et glisse-la pour <strong>réorganiser</strong> l'ordre à ta convenance. (Sur mobile, utilise les icônes à droite des tâches)</li>
               <li>Tes tâches sont <strong>synchronisées</strong> en temps réel sur tous tes appareils connectés avec le même compte.</li>
               <li>Le matin, tu peux utiliser le bouton "Tout décocher" pour <strong>remettre la liste à zéro</strong>.</li>
-              <li>Depuis ton téléphone, tu peux ajouter ce site en "raccourci application" sur ton écran d'accueil pour qu'elle <strong>essemble à une vraie app</strong>. Si tu ne sais pas le faire je te laisse faire une recherche ;)</li>
+              <li>Depuis ton téléphone, tu peux ajouter ce site en "raccourci application" sur ton écran d'accueil pour qu'elle <strong>ressemble à une vraie app</strong>. Si tu ne sais pas le faire je te laisse faire une recherche ;)</li>
             </ul>
           </div>
         </div>
@@ -1436,7 +1481,17 @@
 <header>
   <h1>CIRKL<span>·</span></h1>
   <div class="header-actions">
-    <span id="greeting"></span>
+    <div class="greeting-wrapper">
+      <span id="greeting" onclick="toggleGreetingPopup()" title="Voir mes statistiques"></span>
+      <div class="greeting-popup" id="greeting-popup">
+        <div class="greeting-popup-item">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M8 2l1.5 3 3.5.5-2.5 2.5.6 3.5L8 10l-3.1 1.5.6-3.5L3 5.5 6.5 5z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+          </svg>
+          <span id="tasks-completed-count">—</span>&nbsp;tâches réalisées
+        </div>
+      </div>
+    </div>
     <span id="points-display"></span>
     <button id="uncheck-btn" onclick="uncheckAll()" title="Tout décocher">
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -1760,12 +1815,36 @@ function hamburgerLogout() {
 
 document.addEventListener('click', e => {
   const menu = document.getElementById('hamburger-menu');
-  if (!menu) return;
-  if (!menu.classList.contains('open')) return;
-  if (!e.target.closest('#hamburger-menu') && !e.target.closest('#hamburger-btn')) {
-    closeHamburger();
+  if (menu?.classList.contains('open')) {
+    if (!e.target.closest('#hamburger-menu') && !e.target.closest('#hamburger-btn')) {
+      closeHamburger();
+    }
+  }
+  const popup = document.getElementById('greeting-popup');
+  if (popup?.classList.contains('open')) {
+    if (!e.target.closest('.greeting-wrapper')) {
+      closeGreetingPopup();
+    }
   }
 });
+
+function closeGreetingPopup() {
+  document.getElementById('greeting-popup')?.classList.remove('open');
+}
+
+async function toggleGreetingPopup() {
+  const popup = document.getElementById('greeting-popup');
+  const isOpen = popup.classList.contains('open');
+  if (!isOpen) {
+    const { count } = await db.from('points_log')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', currentUser.id)
+      .eq('reason', 'task_complete');
+    const el = document.getElementById('tasks-completed-count');
+    if (el) el.textContent = count ?? 0;
+  }
+  popup.classList.toggle('open');
+}
 
 // ── MODAL ─────────────────────────────────────────────────────────────────────
 function toggleAccordion(btn) {
